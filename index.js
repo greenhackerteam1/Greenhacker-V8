@@ -1,37 +1,34 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const { Client, useSingleFileAuthState } = require('whatsapp-web.js');
+const fs = require('fs');
+
+const { state, saveState } = useSingleFileAuthState('./session.json');
 
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: useSingleFileAuthState('./session.json'),
     puppeteer: {
         headless: true,
         args: ['--no-sandbox']
-    }
+    },
+    auth: state
 });
 
 client.on('qr', (qr) => {
-    qrcode.generate(qr, { small: true });
+    console.log('Scan this QR Code in terminal OR use pair code via console.');
+});
+
+client.on('pairing-code', (code) => {
+    console.log('===== PAIRING CODE =====');
+    console.log(code);
+    console.log('========================');
 });
 
 client.on('ready', () => {
-    console.log('✅ GREENHACKER V5 ADVANCED is ready!');
-
-    // Auto status viewer (simulation)
-    client.getChats().then(chats => {
-        chats.forEach(chat => {
-            if (chat.isStatus) {
-                chat.fetchMessages({ limit: 1 }).then(() => {
-                    console.log(`🟢 Auto viewed status from: ${chat.name}`);
-                });
-            }
-        });
-    });
+    console.log('✅ GREENHACKER V5 BOT is now connected via Pairing Code!');
 });
 
 client.on('message', async message => {
     const chat = await message.getChat();
 
-    // Auto Typing
     await chat.sendStateTyping();
 
     if (message.body === '!tagall') {
@@ -52,6 +49,10 @@ client.on('message', async message => {
     if (message.body === '!bug') {
         message.reply('✅ GREENHACKER V5 is stable. No bugs detected!');
     }
+});
+
+client.on('auth_failure', () => {
+    console.log('❌ Authentication failed. Try re-pairing.');
 });
 
 client.initialize();
