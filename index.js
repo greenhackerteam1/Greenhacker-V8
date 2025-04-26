@@ -1,58 +1,44 @@
-const { Client, useSingleFileAuthState } = require('whatsapp-web.js');
-const fs = require('fs');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys')
+const { Boom } = require('@hapi/boom')
+const P = require('pino')
 
-const { state, saveState } = useSingleFileAuthState('./session.json');
+const OWNER = ['255619429851']
 
-const client = new Client({
-    authStrategy: useSingleFileAuthState('./session.json'),
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox']
-    },
-    auth: state
-});
+async function startBot() {
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys')
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true,
+        logger: P({ level: 'silent' }),
+        browser: ['Greenhacker V8', 'Chrome', '1.0']
+    })
 
-client.on('qr', (qr) => {
-    console.log('Scan this QR Code in terminal OR use pair code via console.');
-});
+    sock.ev.on('creds.update', saveCreds)
 
-client.on('pairing-code', (code) => {
-    console.log('===== PAIRING CODE =====');
-    console.log(code);
-    console.log('========================');
-});
-
-client.on('ready', () => {
-    console.log('✅ GREENHACKER V5 BOT is now connected via Pairing Code!');
-});
-
-client.on('message', async message => {
-    const chat = await message.getChat();
-
-    await chat.sendStateTyping();
-
-    if (message.body === '!tagall') {
-        if (!chat.isGroup) return;
-        let text = '';
-        for (let participant of chat.participants) {
-            text += `@${participant.id.user} `;
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect } = update
+        if(connection === 'close') {
+            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+            if (shouldReconnect) startBot()
+        } else if(connection === 'open') {
+            console.log('Bot Connected.')
         }
-        chat.sendMessage(text, {
-            mentions: chat.participants.map(p => p.id)
-        });
-    }
+    })
 
-    if (message.body === '!antilink on') {
-        message.reply('✅ Anti-link mode is now ON!');
-    }
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        const msg = messages[0]
+        if (!msg.message) return
+        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
+        const from = msg.key.remoteJid
 
-    if (message.body === '!bug') {
-        message.reply('✅ GREENHACKER V5 is stable. No bugs detected!');
-    }
-});
+        if (text.toLowerCase() === '!bug') {
+            await sock.sendMessage(from, { text: 'Bot is working! [BUG-COMMAND ACTIVE]' })
+        }
 
-client.on('auth_failure', () => {
-    console.log('❌ Authentication failed. Try re-pairing.');
-});
+        if (text.toLowerCase() === '!owner') {
+            await sock.sendMessage(from, { text: 'Owner: wa.me/255619429851' })
+        }
+    })
+}
 
-client.initialize();
+startBot()
