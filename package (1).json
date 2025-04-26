@@ -1,0 +1,15 @@
+{
+  "name": "greenhacker-v5-whatsapp-bot-advanced",
+  "version": "2.0.0",
+  "description": "Advanced WhatsApp bot with auto typing, status viewer and bug command.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Greenhacker",
+  "license": "ISC",
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.21.1"
+  }
+}
