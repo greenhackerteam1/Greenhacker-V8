@@ -1,6 +1,6 @@
-# GREENHACKER V5 ADVANCED BOT
+GREENHACKER V5 ADVANCED BOT
 
-Bot ya WhatsApp yenye:
+WHATSAPP BOT NEW VERSION GREENHACKER V-8😈
 - Auto Typing (inaonyesha typing)
 - Auto Status Viewer (inafungua status za watu)
 - Bug command (!bug)
